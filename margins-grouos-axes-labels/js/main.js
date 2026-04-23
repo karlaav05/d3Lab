@@ -3,49 +3,51 @@
 */
 
 var margin = { left: 100, right: 10, top: 10, bottom: 100 }
-var w = 600;
-var h = 400;
 
 var svg = d3.select("#chart-area").append("svg")
-	.attr("width", w + margin.right + margin.left)
-	.attr("height", h + margin.top + margin.bottom);
+	.attr("width", 600 + margin.right + margin.left)
+	.attr("height", 400 + margin.top + margin.bottom);
 
 var group = svg.append("g")
     .attr("transform", "translate(" + margin.left + ", " + margin.top + ")");
 
-d3.json("data/revenues.json").then((data)=> {
+d3.json("data/buildings.json").then((data)=> {
 	data.forEach((d)=>{
-		d.revenue = +d.revenue;
+		d.height = +d.height;
 	});
 
-    revenue = d3.max(data, (d)=>{return d.revenue});
-    months = data.map((d)=>{return d.month});
+    height = d3.max(data, (d)=>{return d.height});
+    building = data.map((d)=>{return d.name});
 
     var x = d3.scaleBand()
-	    .domain(months)
+	    .domain(building)
 	    .range([0,400])
 	    .paddingInner(.3)
 	    .paddingOuter(.3);
 
     var y = d3.scaleLinear()
-	    .domain([revenue, 0])
-	    .range([0, 400]);
+	    .domain([0, height])
+	    .range([400, 0]);
 
-	var months = group.selectAll("rect")
+    var colors = d3.scaleOrdinal()
+        .domain(building)
+        .range(d3.schemeSet3);
+
+	var buildings = group.selectAll("rect")
         .data(data);
 
-    months.enter()
+    buildings.enter()
         .append("rect")
-            .attr("x", (d)=>{return x(d.month);})
-            .attr("y", (d)=>{return y(d.revenue);})
-            .attr("height", (d)=>{return  h - y(d.revenue);})
+            .attr("x", (d)=>{return x(d.name);})
+            .attr("y", (d)=>{return y(d.height);})
+            .attr("height", (d)=>{return y(0) - y(d.height);})
             .attr("width", x.bandwidth())
-            .attr("fill", "yellow");
+            .attr("fill", (d)=>{return colors(d.name)});
 
     var bottom = d3.axisBottom(x);
     group.append("g")
         .attr("class", "bottom axis")
-        .attr("transform", "translate(0, " + h + ")")
+        .attr("transform", "translate(0, " + 400 + ")")
         .call(bottom)
     .selectAll("text")
         .attr("y", "10")
@@ -54,8 +56,8 @@ d3.json("data/revenues.json").then((data)=> {
     	.attr("transform", "rotate(-20)");
 
     var left = d3.axisLeft(y)
-		.ticks(11)
-		.tickFormat((d)=>{return "$" + d/1000 + "K";});
+		.ticks(5)
+		.tickFormat((d)=>{return d + "m";});
 
     group.append("g")
         .attr("class", "left axis")
@@ -63,21 +65,21 @@ d3.json("data/revenues.json").then((data)=> {
 
     group.append("text")
         .attr("class", "x axis-label")
-        .attr("x", (w / 2))
-        .attr("y", h + 140)
+        .attr("x", (600 / 2))
+        .attr("y", 400 + 140)
         .attr("font-size", "20px")
         .attr("text-anchor", "middle")
         .attr("transform", "translate(-120, -50)")
-        .text("Month");
+        .text("The word's tallest buildings");
 
     group.append("text")
 			.attr("class", "y axis-label")
-			.attr("x", - (h / 2))
+			.attr("x", - (400 / 2))
 			.attr("y", -60)
 			.attr("font-size", "20px")
 			.attr("text-anchor", "middle")
 			.attr("transform", "rotate(-90)")
-			.text("Revenue (dlls.)");
+			.text("Height (m)");
 }).catch((error)=>{
     console.log(error);
 });

@@ -8,6 +8,10 @@ var h = 400;
 
 var transition = d3.transition().duration(1000);
 
+var years;
+var formattedData;
+var interval;
+
 var group = d3.select("#chart-area").append("svg")
 	.attr("width", w + margin.right + margin.left)
 	.attr("height", h + margin.top + margin.bottom)
@@ -78,7 +82,7 @@ d3.json("data/data.json").then((data)=>{
 		d.year = +d.year;
 	});
 
-	const formattedData = data.map((year) => {
+	formattedData = data.map((year) => {
         return year["countries"].filter((country) => {
 		    var dataExists = (country.income && country.life_exp);
 		    return dataExists;
@@ -89,7 +93,7 @@ d3.json("data/data.json").then((data)=>{
 		})
 	});
 
-	var years = data.map((d) => {return d.year;});
+	years = data.map((d) => {return d.year;});
 	var contin = formattedData[0].map((d) => {return d.continent.charAt(0).toUpperCase() + d.continent.slice(1);});
 	var continents = [...new Set(contin)];
 
@@ -111,14 +115,45 @@ d3.json("data/data.json").then((data)=>{
 			.text(c);
 	});
 
-	d3.interval( ( ) => {
-		update(years[cont % years.length], formattedData[cont % years.length]);
-		cont += 1;
-	}, 1000);
-    
-	update(years[cont % years.length], formattedData[cont % years.length]);
-	cont += 1;
+	step();
 });
+
+
+$("#play-button").on("click", ( ) => {
+	
+	var button = $("#play-button");
+	if(button.text() == "Play"){
+		button.text("Pause");
+		interval = setInterval(step, 1000);
+	} 
+    else{
+		button.text("Play");
+		clearInterval(interval);
+	}
+});
+
+
+$("#reset-button").on("click", ( ) => {
+	cont = 0;
+});
+
+$("#continent-select").on("change", ( ) => {
+	step();
+});
+
+$("#date-slider").slider({
+	max: 2014, min: 1800, step: 1,
+	slide:(event, ui) => {
+		cont = ui.value - 1800;
+		step();
+	}
+});
+
+
+function step(){
+    update(years[cont % years.length], formattedData[cont % years.length]);
+	cont += 1;
+}
 
 function update(year, data) {
 	legend_area.text(year);
@@ -129,6 +164,14 @@ function update(year, data) {
     .attr("x", "-5")
     .attr("filled", "white")
     .attr("text-anchor", "middle");
+
+    var continent = $("#continent-select").val();
+    var data = data.filter((d) => {
+        if (continent == "all") { return true; }
+        else {
+            return d.continent == continent;
+        }
+    });
 
 	y_group.call(left);
 	var circles = group.selectAll("circle").data(data, (d) => { return d.country; });
@@ -157,4 +200,7 @@ function update(year, data) {
         .attr("cx", (d) => { return x(d.income); })
         .attr("cy", (d) => { return y(d.life_exp); })
         .attr("r", (d)=>{ return Math.sqrt(area(d.population) / Math.PI);});
+
+    $("#date-slider").slider("value", +(cont + 1800));
+	$("#year")[0].innerHTML = +(year);
 }
